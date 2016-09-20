@@ -36,6 +36,37 @@ while True:
 	if line:
 		print(line)
         # Remove possible garbage lines
+		if line.startswith(bytes('Temperature')):
+			print "Found Temp"
+			piece = line.split(b':')
+			temperature = int(piece[1].strip())
+			location = int(piece[2].strip())
+			try:
+					print "inserting..."
+					x.execute("INSERT INTO Temp(temperature,location) VALUES (%s,%s)",(temperature,location))
+					conn.commit()
+			except MySQLdb.Error, e:
+					try:
+							print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+							if e.args[0]==2006:
+								try:
+									conn = MySQLdb.connect(host= "localhost",
+									user="pi",
+									passwd="r00td0wn",
+									db="pi")
+									x = conn.cursor()
+									print( "Reconnected...")
+									x.execute("INSERT INTO Temp(temperature,location) VALUES (%s,%s)",(temperature,location))
+									conn.commit()
+								except MySQLdb.Error, e:
+									try:
+										print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+									except IndexError:
+										print "MySQL Error: %s" % str(e)
+										conn.rollback()
+					except IndexError:
+						print "MySQL Error: %s" % str(e)			
+					print( temperature,location,now )		
 		if line.startswith(bytes('pulses')):
 			piece = line.split(b':')
 		if 2==len(piece):
@@ -71,35 +102,7 @@ while True:
                                                 conn.rollback()
                 except IndexError:
                         print "MySQL Error: %s" % str(e)
-		if line.startswith(bytes('Temperature')):
-			piece = line.split(b':')
-			temperature = int(piece[1].strip())
-			location = int(piece[2].strip())
-		try:
-				x.execute("INSERT INTO Temp(temperature,location) VALUES (%s,%s)",(temperature,location))
-				conn.commit()
-		except MySQLdb.Error, e:
-				try:
-						print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-						if e.args[0]==2006:
-							try:
-								conn = MySQLdb.connect(host= "localhost",
-								user="pi",
-								passwd="r00td0wn",
-								db="pi")
-								x = conn.cursor()
-								print( "Reconnected...")
-								x.execute("INSERT INTO Temp(temperature,location) VALUES (%s,%s)",(temperature,location))
-								conn.commit()
-							except MySQLdb.Error, e:
-								try:
-									print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-								except IndexError:
-									print "MySQL Error: %s" % str(e)
-									conn.rollback()
-				except IndexError:
-					print "MySQL Error: %s" % str(e)			
-				print( temperature,location,now )
+
         # print(data)
         sys.stdout.flush()
 conn.close()
